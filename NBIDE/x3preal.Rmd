@@ -1,0 +1,417 @@
+---
+title: "cmc"
+author: "Cole Patten"
+date: "2024-06-12"
+output: html_document
+---
+
+
+```{r}
+library(cmcR)
+library(x3ptools)
+library(ggplot2)
+library(magrittr)
+library(dplyr)
+```
+
+
+
+```{r pressure, echo=FALSE}
+path = "/Users/colepatten/Desktop/NBIDE/cc/"
+setwd(path)
+files <- list.files(pattern = "\\.x3p$")
+#print(files)
+```
+
+
+```{r}
+im1 <- x3ptools::x3p_read(paste(path, "BRERR001.x3p", sep="/"))
+x3p_image(im1, size=dim(im1$surface.matrix), zoom=0.5, useNULL=TRUE)
+#rgl::rglwidget()
+```
+
+```{r}
+im1_df <- x3p_to_df(im1)
+im1_df %>% ggplot(aes( x= x, y=y, fill= value)) +
+  geom_tile() +
+  scale_fill_gradient2()
+```
+
+```{r}
+im1_down <- x3p_sample(im1, m=2)
+
+im1_down_df <- x3p_to_df(im1_down)
+im1_down_df %>% ggplot(aes( x= x, y=y, fill= value)) +
+  geom_tile() +
+  scale_fill_gradient2()
+```
+
+```{r}
+im1_cropped <- im1_down %>%
+  preProcess_ransacLevel() %>%
+  preProcess_removeFPCircle() %>%
+  preProcess_erode(region = "exterior",morphRadius = 5) %>%
+  preProcess_erode(region = "interior",morphRadius = 15)
+
+im1_cropped_df <- x3p_to_df(im1_cropped)
+im1_cropped_df %>% ggplot(aes( x= x, y=y, fill= value)) +
+  geom_tile() +
+  scale_fill_gradient2()
+```
+
+```{r}
+im1_deTrended <- im1_cropped %>%
+  preProcess_removeTrend(statistic = "quantile", tau = .5, method = "fn")
+
+im1_deTrended_df <- x3p_to_df(im1_deTrended)
+im1_deTrended_df %>% ggplot(aes( x= x, y=y, fill= value)) +
+  geom_tile() +
+  scale_fill_gradient2()
+```
+
+
+```{r}
+im1_processed <- im1_deTrended %>%
+  preProcess_gaussFilter(filtertype = "bp", wavelength = c(16,500))
+
+im1_processed_df <- x3p_to_df(im1_processed)
+im1_processed_df %>% ggplot(aes( x= x, y=y, fill= value)) +
+  geom_tile() +
+  scale_fill_gradient2()
+```
+
+
+```{r}
+x3p_image(im1_processed, size=dim(im1_processed$surface.matrix), zoom=0.75, useNULL=TRUE)
+x3p_image(im1_down, size=dim(im1_down$surface.matrix), zoom=0.75, useNULL=TRUE)
+```
+
+```{r}
+image_process <- function(im) { # create a function with the name my_function
+  im_processed <- im %>%
+  x3p_sample(m=4) %>%
+  preProcess_ransacLevel() %>%
+  preProcess_removeFPCircle() %>%
+  preProcess_erode(region = "exterior",morphRadius = 2) %>%
+  preProcess_erode(region = "interior",morphRadius = 8) %>%
+  preProcess_removeTrend(statistic = "quantile", tau = .5, method = "fn") %>%
+  preProcess_gaussFilter(filtertype = "bp", wavelength = c(16,500))
+}
+```
+
+```{r}
+image_process2 <- function(im) { # create a function with the name my_function
+  im_processed <- im %>%
+  sample_x3p(m=2) %>%
+  preProcess_crop(region = "exterior") %>%
+  preProcess_crop(region = "interior") %>%
+  preProcess_erode(region = "exterior",morphRadius = 15) %>%
+  preProcess_erode(region = "interior",morphRadius = 100) %>%
+  preProcess_removeTrend(statistic = "quantile",
+                         tau = .5,
+                         method = "fn") %>%
+  preProcess_gaussFilter()
+}
+```
+
+```{r}
+quick1 <- image_process2(x3ptools::x3p_read(paste(path, "BRERR001.x3p", sep="/")))
+quick2 <- image_process2(x3ptools::x3p_read(paste(path, "BRERR067.x3p", sep="/")))
+quick3 <- image_process2(x3ptools::x3p_read(paste(path, "BRERR094.x3p", sep="/")))
+quick4 <- image_process2(x3ptools::x3p_read(paste(path, "BRERR015.x3p", sep="/")))
+quick5 <- image_process2(x3ptools::x3p_read(paste(path, "BRERR020.x3p", sep="/")))
+```
+
+```{r}
+x3pListPlot(list("Ruger Remington" = quick1,
+                 "Ruger Remington*" = quick2,
+                 "Ruger* Remington" = quick3,
+                 "Sig Sauer Remington" = quick4,
+                 "Sig Sauer PMC" = quick5
+                 ),
+            type = "faceted")
+```
+
+
+```{r}
+im2 <- x3ptools::x3p_read(paste(path, "BRERR067.x3p", sep="/"))
+
+im2_processed <- im2 %>%
+  x3p_sample(m=2) %>%
+  preProcess_ransacLevel() %>%
+  preProcess_removeFPCircle() %>%
+  preProcess_erode(region = "exterior",morphRadius = 5) %>%
+  preProcess_erode(region = "interior",morphRadius = 15) %>%
+  preProcess_removeTrend(statistic = "quantile", tau = .5, method = "fn") %>%
+  preProcess_gaussFilter(filtertype = "bp", wavelength = c(16,500))
+```
+
+```{r}
+im3 <- x3ptools::x3p_read(paste(path, "BRERR094.x3p", sep="/"))
+
+im3_processed <- im3 %>%
+  x3p_sample(m=2) %>%
+  preProcess_ransacLevel() %>%
+  preProcess_removeFPCircle() %>%
+  preProcess_erode(region = "exterior",morphRadius = 5) %>%
+  preProcess_erode(region = "interior",morphRadius = 15) %>%
+  preProcess_removeTrend(statistic = "quantile", tau = .5, method = "fn") %>%
+  preProcess_gaussFilter(filtertype = "bp", wavelength = c(16,500))
+```
+
+```{r}
+im4 <- x3ptools::x3p_read(paste(path, "BRERR015.x3p", sep="/"))
+
+im4_processed <- im4 %>%
+  x3p_sample(m=2) %>%
+  preProcess_ransacLevel() %>%
+  preProcess_removeFPCircle() %>%
+  preProcess_erode(region = "exterior",morphRadius = 5) %>%
+  preProcess_erode(region = "interior",morphRadius = 15) %>%
+  preProcess_removeTrend(statistic = "quantile", tau = .5, method = "fn") %>%
+  preProcess_gaussFilter(filtertype = "bp", wavelength = c(16,500))
+```
+
+```{r}
+im5 <- x3ptools::x3p_read(paste(path, "BRERR020.x3p", sep="/"))
+
+im5_processed <- im5 %>%
+  x3p_sample(m=2) %>%
+  preProcess_ransacLevel() %>%
+  preProcess_removeFPCircle() %>%
+  preProcess_erode(region = "exterior",morphRadius = 5) %>%
+  preProcess_erode(region = "interior",morphRadius = 15) %>%
+  preProcess_removeTrend(statistic = "quantile", tau = .5, method = "fn") %>%
+  preProcess_gaussFilter(filtertype = "bp", wavelength = c(16,500))
+```
+
+```{r}
+x3pListPlot(list("Ruger Remington" = im1,
+                 "Ruger Remington*" = im2,
+                 "Ruger* Remington" = im3,
+                 "Sig Sauer Remington" = im4,
+                 "Sig Sauer PMC" = im5
+                 ),
+            type = "faceted")
+```
+
+```{r}
+x3pListPlot(list("Ruger Remington" = im1_processed,
+                 "Ruger Remington*" = im2_processed,
+                 "Ruger* Remington" = im3_processed,
+                 "Sig Sauer Remington" = im4_processed,
+                 "Sig Sauer PMC" = im5_processed
+                 ),
+            type = "faceted")
+```
+
+```{r}
+x3p_image(im1_processed, size=dim(im1_processed$surface.matrix), zoom=0.75, useNULL=TRUE)
+x3p_image(im2_processed, size=dim(im2_processed$surface.matrix), zoom=0.75, useNULL=TRUE)
+x3p_image(im3_processed, size=dim(im3_processed$surface.matrix), zoom=0.75, useNULL=TRUE)
+x3p_image(im4_processed, size=dim(im4_processed$surface.matrix), zoom=0.75, useNULL=TRUE)
+```
+
+```{r}
+cellTibble <- im1_processed %>%
+  comparison_cellDivision(numCells = c(8,8))
+
+cellTibble
+```
+
+```{r}
+cellTibble <- cellTibble %>%
+  mutate(regionHeightValues = comparison_getTargetRegions(cellHeightValues = cellHeightValues,
+                                                          target = im2_processed))
+
+cellTibble
+```
+
+```{r}
+cellTibble <- cellTibble %>%
+  mutate(cellPropMissing = comparison_calcPropMissing(cellHeightValues),
+         regionPropMissing = comparison_calcPropMissing(regionHeightValues)) %>%
+  filter(cellPropMissing <= .85 & regionPropMissing <= .85)
+
+cellTibble #%>%
+  #select(cellIndex,cellPropMissing,regionPropMissing)
+```
+
+```{r}
+cellTibble <- cellTibble  %>%
+  mutate(cellHeightValues = comparison_standardizeHeights(cellHeightValues),
+         regionHeightValues = comparison_standardizeHeights(regionHeightValues)) %>%
+  mutate(cellHeightValues_replaced = comparison_replaceMissing(cellHeightValues),
+         regionHeightValues_replaced = comparison_replaceMissing(regionHeightValues)) %>%
+  mutate(fft_ccf_df = comparison_fft_ccf(cellHeightValues = cellHeightValues_replaced,
+                                         regionHeightValues = regionHeightValues_replaced))
+
+cellTibble %>%
+  tidyr::unnest(cols = fft_ccf_df) %>%
+  select(cellIndex,fft_ccf,x,y)
+```
+
+```{r}
+cellTibble %>%
+  dplyr::mutate(alignedTargetCell = comparison_alignedTargetCell(cellHeightValues =
+                                                                   .data$cellHeightValues,
+                                                                 regionHeightValues =
+                                                                   .data$regionHeightValues,
+                                                                 target = im2_processed,
+                                                                 theta = 0,
+                                                                 fft_ccf_df = .data$fft_ccf_df)) %>%
+  dplyr::mutate(pairwiseCompCor = purrr::map2_dbl(.data$cellHeightValues,.data$alignedTargetCell,
+                                             ~ cor(c(.x$surface.matrix),c(.y$surface.matrix),
+                                                   use = "pairwise.complete.obs"))) %>%
+  tidyr::unnest(fft_ccf_df) %>%
+  select(cellIndex,x,y,pairwiseCompCor)
+```
+
+
+```{r}
+kmComparisonFeatures14 <- purrr::map_dfr(seq(-180,180,by = 3),
+                                       ~ comparison_allTogether(reference = im1_processed,
+                                                                target = im4_processed,
+                                                                theta = .,
+                                                                returnX3Ps = TRUE))
+
+kmComparisonFeatures %>%
+  arrange(theta,cellIndex)
+```
+ 
+ 
+```{r}
+kmComparisonFeatures14 %>%
+  group_by(cellIndex) %>%
+  top_n(n = 1,wt = pairwiseCompCor)
+```
+
+```{r}
+kmComparison_originalCMCs <- kmComparisonFeatures12 %>%
+  mutate(originalMethodClassif = decision_CMC(cellIndex = cellIndex,
+                                              x = x,
+                                              y = y,
+                                              theta = theta,
+                                              corr = pairwiseCompCor,
+                                              xThresh = 100,
+                                              yThresh = 100,
+                                              thetaThresh = 6,
+                                              corrThresh = .8))
+
+kmComparison_originalCMCs %>%
+  filter(originalMethodClassif == "CMC")
+```
+
+```{r}
+kmComparisonFeatures12 %>%
+  mutate(cmcThetaDistribClassif = decision_highCMC_cmcThetaDistrib(cellIndex = cellIndex,
+                                                                   x = x,
+                                                                   y = y,
+                                                                   theta = theta,
+                                                                   corr = pairwiseCompCor,
+                                                                   xThresh = 100,
+                                                                   yThresh = 100,
+                                                                   corrThresh = .78)) %>%
+  filter(cmcThetaDistribClassif == "CMC Candidate") %>%
+  ggplot(aes(x = theta)) +
+  geom_bar(stat = "count",
+           alpha = .7) +
+  theme_bw() +
+  ylab("CMC Candidate Count") +
+  xlab(expression(theta))
+```
+
+```{r}
+kmComparisonFeatures %>%
+  mutate(cmcThetaDistribClassif = decision_highCMC_cmcThetaDistrib(cellIndex = cellIndex,
+                                                                   x = x,
+                                                                   y = y,
+                                                                   theta = theta,
+                                                                   corr = pairwiseCompCor,
+                                                                   xThresh = 30,
+                                                                   yThresh = 30,
+                                                                   corrThresh = .8)) %>%
+  decision_highCMC_identifyHighCMCThetas(tau = 1) %>%
+  filter(cmcThetaDistribClassif == "CMC Candidate") %>%
+  ggplot() +
+  geom_bar(aes(x = theta, fill = thetaCMCIdentif),
+           stat = "count",
+           alpha = .7) +
+  geom_hline(aes(yintercept = max(cmcCandidateCount) - 1),
+             linetype = "dashed") +
+  scale_fill_manual(values = c("black","gray50")) +
+  theme_bw() +
+  ylab("CMC Candidate Count") +
+  xlab(expression(theta))
+```
+
+```{r}
+kmComparison_highCMCs <- kmComparisonFeatures14 %>%
+  mutate(highCMCClassif = decision_CMC(cellIndex = cellIndex,
+                                       x = x,
+                                       y = y,
+                                       theta = theta,
+                                       corr = pairwiseCompCor,
+                                       xThresh = 30,
+                                       yThresh = 30,
+                                       thetaThresh = 6,
+                                       corrThresh = .8,
+                                       tau = 1))
+#Example of cells classified as CMCs and non-CMCs
+kmComparison_highCMCs %>%
+  filter(highCMCClassif == "CMC")
+```
+
+```{r}
+kmComparisonFeatures_rev <- purrr::map_dfr(seq(-180,180,by = 3),
+                                           ~ comparison_allTogether(reference = im2_processed,
+                                                                    target = im1_processed,
+                                                                    theta = .))
+
+kmComparison_allCMCs_rev <- kmComparisonFeatures_rev %>%
+  mutate(originalMethodClassif = decision_CMC(cellIndex = cellIndex,
+                                              x = x,
+                                              y = y,
+                                              theta = theta,
+                                              corr = pairwiseCompCor,
+                                              xThresh = 100,
+                                              yThresh = 100,
+                                              thetaThresh = 6,
+                                              corrThresh = .7),
+         highCMCClassif = decision_CMC(cellIndex = cellIndex,
+                                       x = x,
+                                       y = y,
+                                       theta = theta,
+                                       corr = pairwiseCompCor,
+                                       xThresh = 100,
+                                       yThresh = 100
+                                       thetaThresh = 6,
+                                       corrThresh = .8,
+                                       tau = 1))
+```
+
+                                                               
+```{r}
+kmComparisonFeatures <- purrr::map_dfr(seq(-30,30,by = 3),
+                                       ~ comparison_allTogether(reference = im1_processed,
+                                                                target = im3_processed,
+                                                                theta = .,
+                                                                returnX3Ps = TRUE))
+
+kmComparisonFeatures %>%
+  arrange(theta,cellIndex)
+```
+                                                    
+                                                    
+```{r}
+kmComparisonFeatures <- purrr::map_dfr(seq(-30,30,by = 3),
+                                       ~ comparison_allTogether(reference = im1_processed,
+                                                                target = im4_processed,
+                                                                theta = .,
+                                                                returnX3Ps = TRUE))
+
+kmComparisonFeatures %>%
+  arrange(theta,cellIndex)
+```
+                                                    
+                                                    
