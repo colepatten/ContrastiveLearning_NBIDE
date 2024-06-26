@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/mmfs1/home/jacks.local/cpatten/ContrastiveLearning_NBIDE/code/import_images.py", line 10, in <module>
+    im_names = [f for f in os.listdir(images_path)]
+                           ^^
+NameError: name 'os' is not defined

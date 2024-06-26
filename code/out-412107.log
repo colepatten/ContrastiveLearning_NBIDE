@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "/mmfs1/home/jacks.local/cpatten/ContrastiveLearning_NBIDE/code/import_images.py", line 13, in <module>
+    image = pd.read_csv(image_path + im, encoding="latin_1")
+                        ^^^^^^^^^^
+NameError: name 'image_path' is not defined. Did you mean: 'images_path'?
